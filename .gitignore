@@ -9,3 +9,6 @@ dist/
 a.out
 .idea/
 .vscode/
+
+# Scratch files from compile_fail/run.sh, if it is interrupted
+compile_fail/.tmp.*

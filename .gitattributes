@@ -1,0 +1,3 @@
+# LF everywhere, including Windows checkouts (CI): bash rejects CRLF scripts, and run.sh reads
+# the "// expect-error:" line out of each .cpp file.
+* text=auto eol=lf

@@ -1,0 +1,65 @@
+# Builds and tests on real machines for every platform GitHub offers, so the compile-time checks
+# (exact types, the Int8..Int64 size check, the static_asserts) run with each platform's own
+# types and the runtime tests run on its own CPU. The cross job compiles all eight build-all.sh
+# targets, which runs the same checks for the two musl targets, then runs those binaries too.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Git Bash on Windows, so the shell scripts run unchanged everywhere.
+defaults:
+  run:
+    shell: bash
+
+env:
+  ZIG_VERSION: 0.15.1  # same as the booth
+
+jobs:
+  native:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x86_64,    os: ubuntu-latest }
+          - { name: linux-aarch64,   os: ubuntu-24.04-arm }
+          - { name: macos-x86_64,    os: macos-15-intel }
+          - { name: macos-aarch64,   os: macos-latest }
+          - { name: windows-x86_64,  os: windows-latest }
+          - { name: windows-aarch64, os: windows-11-arm }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: Runtime tests, compile-time checks, compile-fail tests
+        run: zig build test --summary all
+      - name: Example
+        run: zig build run
+
+  cross:
+    name: cross-compile (run ${{ matrix.arch }} musl)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  os: ubuntu-latest }
+          - { arch: aarch64, os: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ env.ZIG_VERSION }}
+      - name: Build all eight targets
+        run: ./build-all.sh
+      - name: Run the musl binary's tests
+        run: ./dist/overflowable-${{ matrix.arch }}-linux-musl --test

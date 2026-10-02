@@ -1,5 +1,7 @@
 # OverflowableInt — Overflow-Checked Integers in C++
 
+[![test](https://github.com/NawaMan/Mosaic-One/actions/workflows/test.yml/badge.svg)](https://github.com/NawaMan/Mosaic-One/actions/workflows/test.yml)
+
 This project is a small C++17 library for signed integers that never overflow silently, built with Zig inside [CodingBooth](https://github.com/NawaMan/CodingBooth) with no compiler installed on the host. An `OverflowableInt` remembers the first overflow in its history (which operands, which operation), and the only way to get a plain number back out, `value()`, throws if anything overflowed. Wrong types, implicit conversions, ignored results and edits to the overflow record are compile errors, and `build-all.sh` cross-compiles native binaries for eight targets: x86_64 and aarch64 Linux (gnu and musl), Intel and Apple-Silicon macOS, and x86_64 and aarch64 Windows.
 
 ## Prerequisites
@@ -77,6 +79,14 @@ just test-long   # zig build test-long — every int16_t input + large samples (
 - **Long tests** check all 4.3 billion `int16_t` pairs, plus 5 million random pairs each for
   `int16_t`, `int32_t` and `int64_t`.
 
+### Continuous integration
+
+Every push and pull request to `main` runs `zig build test` on real Linux, macOS and Windows
+machines, both x86_64 and ARM ([`.github/workflows/test.yml`](.github/workflows/test.yml)). Each
+one compiles the library with its own types, so the `Int8`…`Int64` size check and every
+compile-time rule are checked per platform. A cross-compile job builds all eight targets and runs
+the musl binaries' tests. The long tests are not part of CI.
+
 ## Cross-Compile
 
 Build binaries for 8 platforms from inside the booth:
@@ -109,6 +119,7 @@ build-all.sh          — Cross-compilation script
 run-overflowable.sh   — Runs the dist/ binary for the current machine
 Justfile              — Shortcuts that work inside and outside the booth
 compile_fail/         — Files that must fail to compile, and run.sh to check them
+.github/workflows/    — CI: tests on Linux, macOS and Windows (x86_64 and ARM)
 AGENTS.md             — Design rules and how to work on the project (CLAUDE.md points here)
 ```
 # Mosaic-One

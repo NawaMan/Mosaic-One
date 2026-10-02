@@ -130,6 +130,8 @@ overflow record).
   existing density.
 - Shell scripts (`build-all.sh`, `run-overflowable.sh`, `compile_fail/run.sh`) must work on
   Linux and macOS (bash 3.2, BSD tools): quote expansions, no GNU-only flags.
+  `compile_fail/run.sh` also runs under Git Bash on Windows in CI: relative paths only, and it is
+  started as `bash compile_fail/run.sh`.
 
 ## Landing a worktree branch
 
@@ -147,6 +149,7 @@ fast-forward) → restore the stash → `git worktree remove worktree/<name>` an
 | `main.cpp` | Library, compile-time checks, runtime tests (`--test`, `--test-long`), example |
 | `build.zig` | Steps `run`, `test`, `test-long`; flags and UB-trap settings |
 | `compile_fail/` | Files that must fail to compile + `run.sh` |
+| `.github/workflows/test.yml` | CI: `zig build test` on 6 native platforms + the 8-target cross build |
 | `build-all.sh`, `run-overflowable.sh`, `Justfile` | Cross-compile, run host binary, shortcuts |
 | `booth`, `.booth/` | Vendored CodingBooth (source: `../CodingBooth`) — don't edit `booth` |
 | `dist/`, `zig-out/`, `.zig-cache/` | Build output, git-ignored |

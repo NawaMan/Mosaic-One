@@ -53,8 +53,9 @@ pub fn build(b: *std.Build) void {
     const unit_run = b.addRunArtifact(unit);
     unit_run.addArg("--test");
 
-    // compile_fail/run.sh needs a C++ compiler command; use this same Zig.
-    const compile_fail = b.addSystemCommand(&.{"compile_fail/run.sh"});
+    // compile_fail/run.sh needs a C++ compiler command; use this same Zig. Started through bash
+    // because Windows can't run a .sh file directly (CI there runs under Git Bash).
+    const compile_fail = b.addSystemCommand(&.{ "bash", "compile_fail/run.sh" });
     compile_fail.setEnvironmentVariable("CXX", b.fmt("{s} c++", .{b.graph.zig_exe}));
 
     const test_step = b.step("test", "Runtime tests, compile-time checks and compile-fail tests");
