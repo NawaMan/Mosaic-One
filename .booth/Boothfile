@@ -1,0 +1,22 @@
+# syntax=codingbooth/boothfile:1
+# Configured by: booth config --no-tui --overwrite --variant desktop-xfce --set writable-booth --select clang~vscode-ext/zig+vscode-ext/git-credential/shell-history/claude-code+auto-accept+credential+settings-cache/clion+import-project+skip-first-run/i3+default+ctrl-alt+gaps
+
+env APT_SNAPSHOT=20261001T000000Z
+
+arg CLAUDE_CODE_VERSION=latest
+arg I3_GAPS=8
+arg I3_MOD=alt
+arg LLVM_VERSION=22
+arg ZIG_VERSION=0.15.1
+
+setup i3 ${I3_MOD}
+setup i3-ctrl-alt
+setup i3-default
+setup i3-gaps ${I3_GAPS}
+setup clang --version ${LLVM_VERSION}
+setup claude-code ${CLAUDE_CODE_VERSION}
+setup zig --zig-version ${ZIG_VERSION}
+setup jetbrains clion
+setup jetbrains-import-project clion
+setup zig-code-extension
+setup jetbrains-first-run

@@ -1,0 +1,102 @@
+# OverflowableInt — Overflow-Checked Integers in C++
+
+This project is a small C++17 library for signed integers that never overflow silently, built with Zig inside [CodingBooth](https://github.com/NawaMan/CodingBooth) with no compiler installed on the host. An `OverflowableInt` remembers the first overflow in its history (which operands, which operation), and the only way to get a plain number back out, `value()`, throws if anything overflowed. Wrong types, implicit conversions, ignored results and edits to the overflow record are compile errors, and `build-all.sh` cross-compiles native binaries for eight targets: x86_64 and aarch64 Linux (gnu and musl), Intel and Apple-Silicon macOS, and x86_64 and aarch64 Windows.
+
+## Prerequisites
+
+- Bash
+- Docker
+
+## Quick Start
+
+```bash
+git clone <this-repo>
+cd <this-repo>
+./booth          # Start the CodingBooth container
+just run         # zig build run — build and run the example
+```
+
+Output:
+
+```
+35 + 7 (int8_t) = 42
+  value() = 42
+100 + 28 (int8_t) = -128 [overflow: 100 + 28]
+  value() threw: integer overflow: 100 + 28
+```
+
+## Using It
+
+```cpp
+const auto a = from_value(std::int8_t{100});   // from a plain number (exact type only)
+const auto b = from_value(std::int8_t{28});
+const auto sum = a + b;                         // also: plus, minus/-, times/*, negate/-a
+
+std::cout << sum << "\n";                        // -128 [overflow: 100 + 28]
+const bool overflowed = has_overflow(sum);       // true
+const auto record = sum.exception();             // {a: 100, b: 28, op: OverflowOp::plus}
+
+try {
+    const std::int8_t n = sum.value();           // throws: sum overflowed
+} catch (const OverflowError<std::int8_t>& e) {
+    std::cout << e.what() << "\n";               // integer overflow: 100 + 28
+}
+
+const auto wide = a.widen<std::int16_t>();       // exact; carries any overflow record
+```
+
+Supported types are exactly `int8_t`, `int16_t`, `int32_t` and `int64_t`
+(`OverflowableInt8` … `OverflowableInt64`). Rules the compiler enforces:
+
+| Rule | Example that does not compile |
+|------|-------------------------------|
+| Arithmetic only between two `OverflowableInt` of the same type | `plus(1, 2)`, `a + 1`, `a8 + a16` |
+| No implicit conversions in or out | `from_value<std::int8_t>(300)`, `std::int8_t x = some_int;` |
+| The overflow record can't be edited or faked | `r.overflowed_ = false`, `OverflowableInt8{5, true, {}}` |
+| Results can't be ignored | `total + item;` (nothing changes a value in place) |
+| No ordering (an overflowed value has no right answer) | `a < b` — compare `value()`s instead |
+
+Math done on a number after `value()` hands it out is plain C++ and is not checked.
+
+## Tests
+
+```bash
+just test        # zig build test — runtime tests, compile-time checks, compile-fail tests
+just test-long   # zig build test-long — every int16_t input + large samples (a few minutes)
+```
+
+- **Compile-time checks** (`static_assert`s in `main.cpp`) confirm every misuse above is rejected.
+- **Runtime tests** check `+ - *` and negation for all four widths on edge cases, and every
+  `int8_t` input, against exact 128-bit math, with undefined-behaviour traps on.
+- **Compile-fail tests** (`compile_fail/`) are files that must fail to build with a specific error.
+- **Long tests** check all 4.3 billion `int16_t` pairs, plus 5 million random pairs each for
+  `int16_t`, `int32_t` and `int64_t`.
+
+## Cross-Compile
+
+Build binaries for 8 platforms from inside the booth:
+
+```bash
+just build       # ./build-all.sh
+ls dist/
+```
+
+Exit the booth and run the native binary directly on your host machine:
+
+```bash
+./run-overflowable.sh           # picks dist/overflowable-<arch>-<os> for this machine
+./run-overflowable.sh --test    # run the test suite with that binary
+```
+
+On Windows, run `dist\overflowable-x86_64-windows-gnu.exe` (or the `aarch64` one).
+
+## Project Structure
+
+```
+main.cpp              — The library, its compile-time checks, the tests and the example
+build.zig             — Zig build configuration (run, test, test-long)
+build-all.sh          — Cross-compilation script
+run-overflowable.sh   — Runs the dist/ binary for the current machine
+Justfile              — Shortcuts that work inside and outside the booth
+compile_fail/         — Files that must fail to compile, and run.sh to check them
+```

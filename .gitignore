@@ -1,0 +1,11 @@
+# Zig build output and cache
+zig-out/
+.zig-cache/
+
+# Cross-compiled binaries from build-all.sh
+dist/
+
+# Stray compiler output and IDE settings
+a.out
+.idea/
+.vscode/

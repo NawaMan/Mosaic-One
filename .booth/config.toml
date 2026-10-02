@@ -1,0 +1,11 @@
+# Configured by: booth config --no-tui --overwrite --variant desktop-xfce --set writable-booth --select clang~vscode-ext/zig+vscode-ext/git-credential/shell-history/claude-code+auto-accept+credential+settings-cache/clion+import-project+skip-first-run/i3+default+ctrl-alt+gaps
+
+variant = "desktop-xfce"
+
+run-args = [
+    "-v", "~/.gitconfig:/etc/cb-home-seed/.gitconfig:ro",
+    "-v", "~/.claude.json:/etc/cb-home-seed/.claude.json:ro",
+    "-v", "~/.claude/.credentials.json:/etc/cb-home/.claude/.credentials.json:ro"
+]
+
+writable-booth = true
