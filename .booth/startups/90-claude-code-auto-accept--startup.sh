@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# Configured by: booth config --no-tui --overwrite --variant desktop-xfce --set writable-booth --select clang~vscode-ext/zig+vscode-ext/git-credential/shell-history/claude-code+auto-accept+credential+settings-cache/clion+import-project+skip-first-run/i3+default+ctrl-alt+gaps
+# Configured by: booth config --no-tui --overwrite --variant desktop-xfce --set writable-booth --select clang~vscode-ext/zig:0.16.0+vscode-ext/git-credential/shell-history/claude-code+auto-accept+credential+settings-cache/clion+import-project+skip-first-run/i3+default+ctrl-alt+gaps
 
 # Detect user-bound volumes and protect them from accidental rm -rf
 # by patching Claude Code's deny rules with jq.
