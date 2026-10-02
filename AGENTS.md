@@ -11,6 +11,43 @@ does; this file is how to work on it.
 
 ---
 
+## Design intent (don't undo these)
+
+**Goal:** make it impossible to *accidentally* get a wrong number out of integer arithmetic.
+"Airtight" here means: no accidental misuse compiles, and a wrapped (wrong) result never leaves
+an `OverflowableInt` without an exception. Deliberate workarounds are out of scope and are the
+caller's responsibility: math on a number after `value()`, overwriting a variable with `=`,
+`reinterpret_cast`/`memcpy`, or turning the pragmas off.
+
+**Invariants.** Keep them, and keep the tests that enforce them:
+
+1. **Exactly four types:** `int8_t`, `int16_t`, `int32_t`, `int64_t` (`is_supported_int_v`).
+2. **No arithmetic on plain numbers.** The operations are friends defined inside the class that
+   take `OverflowableInt` only; the arithmetic helpers are private. Don't add `plus(T, T)`,
+   `plus_wrap`/`plus_upgrade` (removed on purpose) or a constructor that converts from `T`.
+3. **No implicit conversions.** `from_value` starts with `int&... ExplicitArgumentBarrier`, so its
+   type always comes from the argument; `#pragma clang diagnostic error "-Wconversion"`.
+4. **The overflow record can't be forged.** Private constructor; the only friends are the four
+   real specializations and `from_value`.
+5. **`value()` is the only way out, and it throws `OverflowError` on overflow.** No unchecked
+   getter: `wrapped_value()` was rejected on purpose. Printing may show the wrapped number.
+6. **The first overflow wins,** across all operations; a later overflow never replaces it.
+7. **No in-place changes:** `+=`, `-=`, `*=` were removed on purpose. Plain `=` is kept so loops,
+   containers and structs work.
+8. **No ordering** (`<` etc.): a value that overflowed has no right answer.
+9. **Results can't be ignored:** the class is `[[nodiscard]]`, and pragmas make `-Wunused-value`,
+   `-Wunused-result` and `-Wunused-comparison` errors.
+
+**Adding an operation** (e.g. divide): follow every invariant. Take and return `OverflowableInt`,
+record the first overflow (add an `OverflowOp`), and check it against the exact `i128` reference
+in `test_width`, `test_int8_exhaustive` and the long sweeps (plus *Verifying* below).
+
+**Not done yet:** `divide`/`remainder` (`min / -1` overflows, `x / 0` is undefined behaviour), and
+a checked `narrow` (open question: a value that doesn't fit can't be stored in the smaller type's
+overflow record).
+
+---
+
 ## Rules you must follow
 
 0. **Proposal before code.** For anything that is not pure Q&A: research read-only, then post

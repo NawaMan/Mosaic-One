@@ -90,6 +90,11 @@ Exit the booth and run the native binary directly on your host machine:
 
 On Windows, run `dist\overflowable-x86_64-windows-gnu.exe` (or the `aarch64` one).
 
+## Contributing
+
+For the design rules and how to work on this project (people and AI agents), see
+[AGENTS.md](AGENTS.md).
+
 ## Project Structure
 
 ```
@@ -99,4 +104,5 @@ build-all.sh          — Cross-compilation script
 run-overflowable.sh   — Runs the dist/ binary for the current machine
 Justfile              — Shortcuts that work inside and outside the booth
 compile_fail/         — Files that must fail to compile, and run.sh to check them
+AGENTS.md             — Design rules and how to work on the project (CLAUDE.md points here)
 ```
