@@ -32,7 +32,9 @@ jobs:
           - { name: linux-x86_64,    os: ubuntu-latest }
           - { name: linux-aarch64,   os: ubuntu-24.04-arm }
           - { name: macos-x86_64,    os: macos-15-intel }
-          - { name: macos-aarch64,   os: macos-latest }
+          # Not macos-latest (macOS 26): Zig before 0.16 can't link against the Xcode 26.4+ SDK
+          # (codeberg.org/ziglang/zig/issues/31658). Move up together with the booth's Zig.
+          - { name: macos-aarch64,   os: macos-15 }
           - { name: windows-x86_64,  os: windows-latest }
           - { name: windows-aarch64, os: windows-11-arm }
     steps:
