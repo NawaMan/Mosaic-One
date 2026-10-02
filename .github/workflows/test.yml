@@ -20,6 +20,9 @@ defaults:
 
 env:
   ZIG_VERSION: 0.16.0  # same as the booth
+  # Only for windows-aarch64 (see that job's note below): the x86_64 Windows Zig's checksum, from
+  # ziglang.org/download/index.json. Update both together.
+  ZIG_X86_64_WINDOWS_SHA256: 68659eb5f1e4eb1437a722f1dd889c5a322c9954607f5edcf337bc3684a75a7e
 
 jobs:
   native:
@@ -36,16 +39,61 @@ jobs:
           # (codeberg.org/ziglang/zig/issues/31658).
           - { name: macos-aarch64,   os: macos-latest }
           - { name: windows-x86_64,  os: windows-latest }
-          - { name: windows-aarch64, os: windows-11-arm }
+          # Zig 0.16.0's own aarch64-windows build crashes on most work, e.g. building the test
+          # program exits with code 5 and no message (codeberg.org/ziglang/zig/issues/31865, fix
+          # planned for 0.18). So this job runs the x86_64 Zig under Windows' x64 emulation and
+          # has it cross-compile a real ARM64 test program, which then runs natively. Remove
+          # `cross` (back to `zig build test`) once a Zig release fixes it.
+          - { name: windows-aarch64, os: windows-11-arm, cross: aarch64-windows-gnu }
     steps:
       - uses: actions/checkout@v5
+
       - uses: mlugg/setup-zig@v2
+        if: ${{ !matrix.cross }}
         with:
           version: ${{ env.ZIG_VERSION }}
+
+      - name: Install x86_64 Zig (runs under emulation)
+        if: ${{ matrix.cross }}
+        shell: pwsh
+        run: |
+          $zip = "zig-x86_64-windows-$env:ZIG_VERSION"
+          Invoke-WebRequest "https://ziglang.org/download/$env:ZIG_VERSION/$zip.zip" -OutFile zig.zip
+          $hash = (Get-FileHash zig.zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:ZIG_X86_64_WINDOWS_SHA256) { throw "zig.zip checksum mismatch: $hash" }
+          Expand-Archive zig.zip -DestinationPath "$env:RUNNER_TEMP"
+          "$env:RUNNER_TEMP\$zip" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
       - name: Runtime tests, compile-time checks, compile-fail tests
+        if: ${{ !matrix.cross }}
         run: zig build test --summary all
       - name: Example
+        if: ${{ !matrix.cross }}
         run: zig build run
+
+      # The cross route covers the same three kinds of test as `zig build test`. The test program
+      # uses Zig's default Debug build (its own undefined-behaviour checks) instead of build.zig's
+      # trap-on-UB test build, which only targets the machine Zig runs as (here x86_64).
+      - name: Compile-time checks (build the ${{ matrix.cross }} program)
+        if: ${{ matrix.cross }}
+        run: zig build -Dtarget=${{ matrix.cross }} --summary all
+      - name: Check the program is ARM64, not x86_64
+        if: ${{ matrix.cross }}
+        run: |
+          exe=zig-out/bin/overflowable.exe
+          pe=$(od -An -tu4 -j60 -N4 "$exe" | tr -d ' ')
+          machine=$(od -An -tx2 -j$((pe + 4)) -N2 "$exe" | tr -d ' ')
+          echo "PE machine: $machine"
+          [ "$machine" = aa64 ]
+      - name: Runtime tests (native ARM64)
+        if: ${{ matrix.cross }}
+        run: ./zig-out/bin/overflowable.exe --test
+      - name: Compile-fail tests (for ${{ matrix.cross }})
+        if: ${{ matrix.cross }}
+        run: CXX="zig c++ -target ${{ matrix.cross }}" bash compile_fail/run.sh
+      - name: Example (native ARM64)
+        if: ${{ matrix.cross }}
+        run: ./zig-out/bin/overflowable.exe
 
   cross:
     name: cross-compile (run ${{ matrix.arch }} musl)

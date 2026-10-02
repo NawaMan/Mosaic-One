@@ -110,6 +110,26 @@ overflow record).
   targets must compile.
 - Check `zig`, `just` exist before running; if a tool is missing, stop and tell the user — don't
   invent a fallback (e.g. switching to `g++`).
+- **CI** (`.github/workflows/test.yml`) runs after a push; it can't be run from the booth. It
+  covers 6 native platforms + the 8-target cross build. The long tests are not in CI.
+
+### Zig version and CI workarounds
+
+The Zig version is pinned in two places that must match: the booth (`ZIG_VERSION` in
+`.booth/Boothfile`, changed only through the host-side `booth config … zig:<version>`) and
+`ZIG_VERSION` in the workflow. Two known Zig bugs shape the workflow; recheck both on every Zig
+upgrade:
+
+- **macOS 26 (Xcode 26.4+ SDK):** Zig before 0.16 can't link there
+  ([ziglang/zig#31658](https://codeberg.org/ziglang/zig/issues/31658)), so 0.16.0 is the minimum.
+- **Windows ARM:** Zig 0.16.0's aarch64-windows build crashes, e.g. building the test program
+  exits with code 5 and no message ([ziglang/zig#31865](https://codeberg.org/ziglang/zig/issues/31865),
+  fix planned for 0.18). The `windows-aarch64` job therefore downloads the **x86_64** Windows Zig
+  (checksum in `ZIG_X86_64_WINDOWS_SHA256`, from `ziglang.org/download/index.json` — update it
+  with `ZIG_VERSION`) and cross-compiles: `zig build -Dtarget=aarch64-windows-gnu`, a check that
+  the `.exe` is ARM64, then `overflowable.exe --test` natively and `compile_fail/run.sh` with
+  `CXX="zig c++ -target aarch64-windows-gnu"`. Once a Zig release fixes it, drop the job's
+  `cross` matrix key so it runs `zig build test` like the others.
 
 ## C++ conventions (from `main.cpp`)
 
@@ -149,7 +169,7 @@ fast-forward) → restore the stash → `git worktree remove worktree/<name>` an
 | `main.cpp` | Library, compile-time checks, runtime tests (`--test`, `--test-long`), example |
 | `build.zig` | Steps `run`, `test`, `test-long`; flags and UB-trap settings |
 | `compile_fail/` | Files that must fail to compile + `run.sh` |
-| `.github/workflows/test.yml` | CI: `zig build test` on 6 native platforms + the 8-target cross build |
+| `.github/workflows/test.yml` | CI: tests on 6 native platforms (Windows ARM via cross-compile) + the 8-target cross build |
 | `build-all.sh`, `run-overflowable.sh`, `Justfile` | Cross-compile, run host binary, shortcuts |
 | `booth`, `.booth/` | Vendored CodingBooth (source: `../CodingBooth`) — don't edit `booth` |
 | `dist/`, `zig-out/`, `.zig-cache/` | Build output, git-ignored |

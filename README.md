@@ -81,11 +81,20 @@ just test-long   # zig build test-long — every int16_t input + large samples (
 
 ### Continuous integration
 
-Every push and pull request to `main` runs `zig build test` on real Linux, macOS and Windows
+Every push and pull request to `main` runs the tests on real Linux, macOS and Windows
 machines, both x86_64 and ARM ([`.github/workflows/test.yml`](.github/workflows/test.yml)). Each
 one compiles the library with its own types, so the `Int8`…`Int64` size check and every
 compile-time rule are checked per platform. A cross-compile job builds all eight targets and runs
 the musl binaries' tests. The long tests are not part of CI.
+
+**Windows on ARM:** Zig 0.16.0's own Windows ARM build crashes (exit code 5, no message;
+[ziglang/zig#31865](https://codeberg.org/ziglang/zig/issues/31865), fix planned for Zig 0.18).
+So the Windows ARM CI job runs the x86_64 Zig under Windows' built-in emulation, cross-compiles a
+real ARM64 test program with it, checks the program really is ARM64, and runs it natively, plus the
+compile-fail tests for that target. The test program is Zig's default Debug build rather than
+`zig build test`'s trap-on-undefined-behaviour build. To build on a Windows ARM machine yourself,
+install the x86_64 Windows Zig and pass `-Dtarget=aarch64-windows-gnu`, or use
+`dist\overflowable-aarch64-windows-gnu.exe`.
 
 ## Cross-Compile
 
