@@ -20,6 +20,19 @@
 #pragma clang diagnostic error "-Wunused-value"
 #pragma clang diagnostic error "-Wunused-comparison"
 
+// Short names for the four supported types. Each is whichever built-in type has exactly that
+// many bits on this platform (Int64 is long on Linux, long long on macOS and Windows), so code
+// written with them means the same thing everywhere; long and long long do not.
+using Int8  = std::int8_t;
+using Int16 = std::int16_t;
+using Int32 = std::int32_t;
+using Int64 = std::int64_t;
+
+// The standard already promises these sizes; checked so a platform that breaks it fails to build.
+static_assert(sizeof(Int8) == 1 && sizeof(Int16) == 2 && sizeof(Int32) == 4 &&
+                  sizeof(Int64) == 8,
+              "Int8..Int64 must be exactly 1, 2, 4 and 8 bytes");
+
 // The only types this library supports. Checked by exact type, so e.g. long long
 // is rejected where it is not the same type as int64_t (it is a distinct type on Linux).
 template <typename T>
@@ -364,6 +377,12 @@ static_assert(all_ops_compile_v<std::int32_t> && no_plain_ops_v<std::int32_t>);
 static_assert(all_ops_compile_v<std::int64_t> && no_plain_ops_v<std::int64_t>);
 static_assert(no_plain_ops_v<int> && no_plain_ops_v<double>);
 
+// The short names are the supported types themselves, not new ones, so they mix freely.
+static_assert(std::is_same_v<decltype(from_value(Int8{})), OverflowableInt8>);
+static_assert(std::is_same_v<decltype(from_value(Int16{})), OverflowableInt16>);
+static_assert(std::is_same_v<decltype(from_value(Int32{})), OverflowableInt32>);
+static_assert(std::is_same_v<decltype(from_value(Int64{})), OverflowableInt64>);
+
 // Other types can't even become an OverflowableInt.
 static_assert(!compiles_v<from_value_call, std::uint8_t>);
 static_assert(!compiles_v<from_value_call, std::uint32_t>);
@@ -455,8 +474,8 @@ static_assert(!compiles_v<minus_assign_op, OverflowableInt8, OverflowableInt8>);
 static_assert(!compiles_v<times_assign_op, OverflowableInt8, OverflowableInt8>);
 
 // Works at compile time: a result that didn't overflow gives its value.
-static_assert((from_value(std::int8_t{35}) + from_value(std::int8_t{7})).value() == 42);
-static_assert((from_value(std::int8_t{100}) + from_value(std::int8_t{28})).overflowed());
+static_assert((from_value(Int8{35}) + from_value(Int8{7})).value() == 42);
+static_assert((from_value(Int8{100}) + from_value(Int8{28})).overflowed());
 
 // Every test failure goes through here: it prints the FAIL line and is counted, so a test run
 // exits non-zero on any failure (which `zig build test` relies on).
@@ -847,17 +866,17 @@ int main(int argc, char** argv) {
         return test_long();
     }
 
-    const OverflowableInt8 sum = from_value(std::int8_t{35}) + from_value(std::int8_t{7});
+    const OverflowableInt8 sum = from_value(Int8{35}) + from_value(Int8{7});
     std::cout << "35 + 7 (int8_t) = " << sum << "\n";
     std::cout << "  value() = " << static_cast<int>(sum.value()) << "\n";
 
     // 100 + 28 = 128 doesn't fit in int8_t (max 127): it wraps to -128 and is flagged.
-    const OverflowableInt8 too_big = from_value(std::int8_t{100}) + from_value(std::int8_t{28});
+    const OverflowableInt8 too_big = from_value(Int8{100}) + from_value(Int8{28});
     std::cout << "100 + 28 (int8_t) = " << too_big << "\n";
     try {
-        const std::int8_t v = too_big.value();
+        const Int8 v = too_big.value();
         std::cout << "  value() = " << static_cast<int>(v) << "\n";
-    } catch (const OverflowError<std::int8_t>& e) {
+    } catch (const OverflowError<Int8>& e) {
         std::cout << "  value() threw: " << e.what() << "\n";
     }
     return 0;
