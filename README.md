@@ -28,8 +28,8 @@ Output:
 ## Using It
 
 ```cpp
-const auto a = from_value(std::int8_t{100});   // from a plain number (exact type only)
-const auto b = from_value(std::int8_t{28});
+const auto a = from_value(Int8{100});           // from a plain number (exact type only)
+const auto b = from_value(Int8{28});
 const auto sum = a + b;                         // also: plus, minus/-, times/*, negate/-a
 
 std::cout << sum << "\n";                        // -128 [overflow: 100 + 28]
@@ -37,16 +37,21 @@ const bool overflowed = has_overflow(sum);       // true
 const auto record = sum.exception();             // {a: 100, b: 28, op: OverflowOp::plus}
 
 try {
-    const std::int8_t n = sum.value();           // throws: sum overflowed
-} catch (const OverflowError<std::int8_t>& e) {
+    const Int8 n = sum.value();                  // throws: sum overflowed
+} catch (const OverflowError<Int8>& e) {
     std::cout << e.what() << "\n";               // integer overflow: 100 + 28
 }
 
-const auto wide = a.widen<std::int16_t>();       // exact; carries any overflow record
+const auto wide = a.widen<Int16>();              // exact; carries any overflow record
 ```
 
 Supported types are exactly `int8_t`, `int16_t`, `int32_t` and `int64_t`
-(`OverflowableInt8` … `OverflowableInt64`). Rules the compiler enforces:
+(`OverflowableInt8` … `OverflowableInt64`). `Int8`, `Int16`, `Int32` and `Int64` are short names
+for them that mean the same size on every platform; the build checks they are exactly 1, 2, 4 and
+8 bytes. Prefer them over `long` or `long long`: `Int64` is `long` on Linux but `long long` on macOS
+and Windows, so code that writes `long long` is accepted on some platforms and rejected on others.
+
+Rules the compiler enforces:
 
 | Rule | Example that does not compile |
 |------|-------------------------------|
@@ -106,3 +111,4 @@ Justfile              — Shortcuts that work inside and outside the booth
 compile_fail/         — Files that must fail to compile, and run.sh to check them
 AGENTS.md             — Design rules and how to work on the project (CLAUDE.md points here)
 ```
+# Mosaic-One
